@@ -1,3 +1,62 @@
+# A Beam QA Bot!
+
+This is an experiment by @pabloem on building a simple chatbot for answering Beam questions. My effort so far is not very successful.
+
+This chatbot works using Langchain, an toolkit for generative AI. The chatbot works in the following way:
+
+1. Receive a prompt from the user
+2. Convert the prompt into a Vector, using VertexAI's Text Embedding API
+3. Use the prompt's Vector to look up **documents** from a database of Beam-related documents
+4. Pass the user prompt along with the documents that we found as context to the Vertex AI PaLM API for text generation
+5. Return the result to the user.
+
+The database with Beam-related documents was built using the scripts
+`ingest.sh`, `ingest_so.sh` and `ingest.py`, and stored in cloud storage under
+`gs://apache-beam-testing-pabloem/beam-qa/vecstore/vecstoredir`.
+
+## Installing dependencies
+
+To run this chatbot, you can install its dependencies in a virtualenv:
+
+```sh
+virtualenv venv
+. venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+## Running with prebuilt artifacts
+
+You can easily run the QA bot without building your own document database, just download the existing one:
+
+```sh
+gsutil cp -r gs://apache-beam-testing-pabloem/beam-qa/vecstore/vecstoredir .
+```
+
+Once you have the document database, you can run the chatbot:
+
+```sh
+make start
+```
+
+## Building your own Beam document database
+
+To build your own document database, please inspect all of the `ingest*` files in this repository.
+In short, the steps I followed were:
+- Download every document under https://beam.apache.org (by running `ingest.sh`)
+- Download every StackOverflow question with the `apache-beam` tag. (by running `ingest_so.sh`)
+- Run `python ingest.py`
+
+**Likely improvements** are:
+- Ensure that the StackOverflow documents are cleaner than they are right now.
+- Use a wider set of Beam docs (perhaps Dataflow support examples?)
+- Use a PaLM 2 model instead of the current default of PaLM.
+- Use a HuggingFace model, or GPT 4 instead of the current model.
+
+------------------------
+
+**The text below is from the original repository**
+
 # 🦜️🔗 ChatLangChain
 
 This repo is an implementation of a locally hosted chatbot specifically focused on question answering over the [LangChain documentation](https://langchain.readthedocs.io/en/latest/).

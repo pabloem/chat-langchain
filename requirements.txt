@@ -1,13 +1,13 @@
-openai
 fastapi
 black
 isort
 websockets
 pydantic
-langchain
+langchain[async,vertexai]
 uvicorn
 jinja2
 faiss-cpu
 bs4
 unstructured
 libmagic
+vertexai

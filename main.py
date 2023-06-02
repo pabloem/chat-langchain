@@ -7,6 +7,8 @@ from typing import Optional
 from fastapi import FastAPI, Request, WebSocket, WebSocketDisconnect
 from fastapi.templating import Jinja2Templates
 from langchain.vectorstores import VectorStore
+from langchain.vectorstores.faiss import FAISS
+from langchain.embeddings import VertexAIEmbeddings
 
 from callback import QuestionGenCallbackHandler, StreamingLLMCallbackHandler
 from query_data import get_chain
@@ -20,11 +22,12 @@ vectorstore: Optional[VectorStore] = None
 @app.on_event("startup")
 async def startup_event():
     logging.info("loading vectorstore")
-    if not Path("vectorstore.pkl").exists():
+    if not Path("vecstoredir/index.pkl").exists():
         raise ValueError("vectorstore.pkl does not exist, please run ingest.py first")
-    with open("vectorstore.pkl", "rb") as f:
-        global vectorstore
-        vectorstore = pickle.load(f)
+    global vectorstore
+    embeddings = VertexAIEmbeddings()
+    vectorstore = FAISS.load_local('vecstoredir', embeddings)
+    print('Vector store is ', vectorstore)
 
 
 @app.get("/")
@@ -38,10 +41,10 @@ async def websocket_endpoint(websocket: WebSocket):
     question_handler = QuestionGenCallbackHandler(websocket)
     stream_handler = StreamingLLMCallbackHandler(websocket)
     chat_history = []
-    qa_chain = get_chain(vectorstore, question_handler, stream_handler)
+    #qa_chain = get_chain(vectorstore, question_handler, stream_handler)
     # Use the below line instead of the above line to enable tracing
     # Ensure `langchain-server` is running
-    # qa_chain = get_chain(vectorstore, question_handler, stream_handler, tracing=True)
+    qa_chain = get_chain(vectorstore, question_handler, stream_handler, tracing=True)
 
     while True:
         try:
@@ -59,8 +62,10 @@ async def websocket_endpoint(websocket: WebSocket):
             )
             chat_history.append((question, result["answer"]))
 
-            end_resp = ChatResponse(sender="bot", message="", type="end")
+            end_resp = ChatResponse(sender="bot", message=result['answer'], type="stream")
             await websocket.send_json(end_resp.dict())
+            await websocket.send_json(
+                    ChatResponse(sender="bot", message="", type="end").dict())
         except WebSocketDisconnect:
             logging.info("websocket disconnect")
             break
