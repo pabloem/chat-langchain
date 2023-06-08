@@ -4,7 +4,7 @@
 #   - jq  - a utility to parse JSON with the command line
 #   - curl - the well known unix tool curl
 
-URL="https://api.stackexchange.com/2.3/questions?pagesize=100&tagged=apache-beam&site=stackoverflow"
+URL="https://api.stackexchange.com/2.3/questions?pagesize=100&tagged=falco&site=stackoverflow"
 
 function getQuestions() {
   PAGE=0
@@ -19,6 +19,7 @@ function getQuestions() {
         break
       fi
   done
+  rm tmp_response.json
 }
 
 function getTextFromQuestions() {
@@ -29,9 +30,10 @@ function getTextFromQuestions() {
     FILES=$((FILES + 1))
     echo "curling ${line} - file # ${FILE}"
     filename=`echo ${line} | cut -d "/" -f 6`
-    curl "${line}" | pup "#question-header,#mainbar text{}" >> stackoverflow/${filename}-q-${FILES}
+    curl "${line}" | pup ".fs-headline1,.js-post-body text{}" | sed "/^ *$/d" >> stackoverflow/${filename}-q-${FILES}
     sleep 5
   done < "$file"
+  rm question_links.txt
 }
 
 echo "Getting questions"
